@@ -3,6 +3,8 @@ import subprocess
 import os
 import time
 import json
+import requests
+
 
 # Get user provided information from bash script and parse it
 
@@ -36,10 +38,12 @@ def getTemps():
     equipDN_list = []
     equipName_list = []
     equipModel_list = []
+    equipSerial_list = []
     for equipID in equipID_list:
         equipDN_list.append(equipID.dn)
         equipName_list.append(equipID.name)
         equipModel_list.append(equipID.model)
+        equipSerial_list.append(equipID.serial)
 
     # get temperature stats
     #temps_list = handle.query_classid("processorEnvStats")
@@ -91,9 +95,7 @@ def getTemps():
         time = tempsTime_list[c].split('T')[1]  # time occurs after 'T' in  ts string
         time = time.split('.')[0]  # remove microseconds from time occurring after period
 
-        obj = {"dn": equipDN_list[c],
-               "attributes": {"temp": tempsIOH_list[c], "timestamp": time, "date": date, "condition": condition_list[c],
-                              "type": equipModel_list[c]}}
+        obj = {"dn": equipDN_list[c], "attributes": {"temp": int_temp, "timestamp": time, "date": date, "condition": condition, "type": equipModel_list[c]}}
         print obj
         c = c+1
 
@@ -112,14 +114,17 @@ def send2_RESTAPI(obj):
     try:
         while True:
             headers = {"Content-Type": "application/json"}
-            rsp = requests.post('http://app:5000/device', headers=headers, data=json.dumps(obj))
+            rsp = requests.post('http://app:5000/device',
+                                headers=headers, data=json.dumps(obj))
             return rsp.ok
     except:
         print "API microservice not running...keep getting data..."
         pass
 
+
 def ucsm_logout(handle):
     handle.logout()
+
 
 if __name__ == "__main__":
     try:
